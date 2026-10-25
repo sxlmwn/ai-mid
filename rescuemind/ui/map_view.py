@@ -26,7 +26,7 @@ def render_operations_map(
     m = folium.Map(
         location=DEFAULT_MAP_CENTER,
         zoom_start=DEFAULT_ZOOM_LEVEL,
-        tiles="CartoDB positron",
+        tiles="OpenStreetMap",
         control_scale=True,
     )
 
@@ -179,4 +179,18 @@ def render_operations_map(
         st_folium(m, width="100%", height=height, returned_objects=[])
     except Exception as e:
         st.warning(f"Map interactive rendering fallback: {e}")
-        st.info("Interactive map fallback active. Network topology and route nodes are listed below.")
+        st.info("Interactive map fallback active. Network topology and route data are preserved below.")
+        if highlight_route and highlight_route.success:
+            st.markdown(
+                f"**Active Route ({highlight_route.algorithm_name}):** `{' -> '.join(highlight_route.path)}` | "
+                f"**Cost:** {highlight_route.cost} km | **Time:** {highlight_route.travel_time} min"
+            )
+        if active_plan and active_plan.assignments:
+            st.markdown("**Active Dispatched Routes:**")
+            for a in active_plan.assignments:
+                if a.route and a.route.success:
+                    st.markdown(
+                        f"- Incident **{a.incident_id}** (Team `{a.team_id}`): "
+                        f"`{' -> '.join(a.route.path)}` (Cost: {a.route.cost} km)"
+                    )
+
