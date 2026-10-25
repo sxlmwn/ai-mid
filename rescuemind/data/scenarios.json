@@ -1,0 +1,47 @@
+{
+  "synthetic_disclaimer": "Predefined operational simulation scenarios for university demonstration.",
+  "scenarios": [
+    {
+      "scenario_id": "SCENARIO_DEFAULT",
+      "name": "Twin Cities Morning Baseline",
+      "description": "Standard morning conditions across Islamabad and Rawalpindi with all primary corridors open and moderate waiting queues.",
+      "blocked_roads": [],
+      "congestions": [],
+      "focus_incidents": ["INC-106", "INC-107", "INC-101", "INC-105", "INC-102"]
+    },
+    {
+      "scenario_id": "SCENARIO_FAIZABAD_CLOSURE",
+      "name": "Faizabad Gateway Disruption (Replan Test)",
+      "description": "The central Faizabad junction link is blocked due to emergency maintenance. Forces teams crossing between Islamabad and Rawalpindi to replan routes via I-8 or Expressway.",
+      "blocked_roads": [
+        ["ZERO_POINT", "FAIZABAD"],
+        ["FAIZABAD", "STADIUM_ROAD"]
+      ],
+      "congestions": [
+        {"u": "I8_MARKAZ", "v": "FAIZABAD", "multiplier": 2.2}
+      ],
+      "focus_incidents": ["INC-106", "INC-105"]
+    },
+    {
+      "scenario_id": "SCENARIO_RESOURCE_EXHAUSTION",
+      "name": "High Urgency Skill Shortage (CSP Infeasibility Demo)",
+      "description": "Multiple simultaneous critical wildlife and water rescue calls. Designed to stress-test CSP constraint solver and prove transparent candidate rejection reasons.",
+      "blocked_roads": [],
+      "congestions": [],
+      "focus_incidents": ["INC-102", "INC-104", "INC-106"]
+    },
+    {
+      "scenario_id": "SCENARIO_HIGH_CONGESTION",
+      "name": "Monsoon Flash Rainstorm Congestion",
+      "description": "Severe weather congestion on Srinagar Highway and Blue Area corridors (2.5x travel time). Demonstrates how UCS and A* dynamically adapt to congested edge weights.",
+      "blocked_roads": [
+        ["BLUE_AREA_N", "BLUE_AREA_S"]
+      ],
+      "congestions": [
+        {"u": "ZERO_POINT", "v": "H8_CLINIC", "multiplier": 2.5},
+        {"u": "G9_KARACHI", "v": "H8_CLINIC", "multiplier": 2.5}
+      ],
+      "focus_incidents": ["INC-101", "INC-103", "INC-107"]
+    }
+  ]
+}

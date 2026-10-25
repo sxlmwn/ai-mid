@@ -1,0 +1,70 @@
+{
+  "synthetic_disclaimer": "Synthetic rescue team personnel and equipment profiles for educational simulation.",
+  "teams": [
+    {
+      "team_id": "TEAM-01",
+      "name": "Capital Rescue Alpha",
+      "base_location_id": "F6_SUPER",
+      "current_location_id": "F6_SUPER",
+      "latitude": 33.7295,
+      "longitude": 73.0745,
+      "skills": ["veterinary_care", "transport", "trapped_animal_extrication"],
+      "status": "available",
+      "capacity": 1,
+      "travel_budget": 50.0,
+      "supported_categories": ["dog", "cat", "bird", "other"]
+    },
+    {
+      "team_id": "TEAM-02",
+      "name": "Margalla Wildlife & Avian Squad",
+      "base_location_id": "SHAKARPARIAN",
+      "current_location_id": "SHAKARPARIAN",
+      "latitude": 33.6890,
+      "longitude": 73.0820,
+      "skills": ["wildlife_rescue", "veterinary_care", "water_rescue"],
+      "status": "available",
+      "capacity": 1,
+      "travel_budget": 45.0,
+      "supported_categories": ["wildlife", "bird"]
+    },
+    {
+      "team_id": "TEAM-03",
+      "name": "Twin Cities Heavy Transport",
+      "base_location_id": "I8_MARKAZ",
+      "current_location_id": "I8_MARKAZ",
+      "latitude": 33.6700,
+      "longitude": 73.0720,
+      "skills": ["transport", "trapped_animal_extrication", "handling_aggressive"],
+      "status": "available",
+      "capacity": 2,
+      "travel_budget": 60.0,
+      "supported_categories": ["dog", "livestock", "other"]
+    },
+    {
+      "team_id": "TEAM-04",
+      "name": "Rawalpindi South Rapid Response",
+      "base_location_id": "SADAR_RAWALPINDI",
+      "current_location_id": "SADAR_RAWALPINDI",
+      "latitude": 33.5980,
+      "longitude": 73.0540,
+      "skills": ["veterinary_care", "handling_aggressive", "transport"],
+      "status": "available",
+      "capacity": 1,
+      "travel_budget": 40.0,
+      "supported_categories": ["dog", "cat"]
+    },
+    {
+      "team_id": "TEAM-05",
+      "name": "Rawal Lake Wetland & Marine Rescue",
+      "base_location_id": "RAWAL_LAKE",
+      "current_location_id": "RAWAL_LAKE",
+      "latitude": 33.7020,
+      "longitude": 73.1250,
+      "skills": ["water_rescue", "wildlife_rescue", "transport"],
+      "status": "available",
+      "capacity": 1,
+      "travel_budget": 35.0,
+      "supported_categories": ["bird", "wildlife", "dog"]
+    }
+  ]
+}
