@@ -231,6 +231,7 @@ class DispatchService:
         if not self.current_plan:
             return ["No active dispatch plan currently running."]
 
+        self.previous_plan = copy.deepcopy(self.current_plan)
         replan_notes: List[str] = []
         blocked_desc = f"{u} <-> {v}"
 

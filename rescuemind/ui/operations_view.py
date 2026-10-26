@@ -13,6 +13,13 @@ def render_rescue_operations_view(sim: SimulationService):
     st.markdown('<div class="page-title">Rescue Operations</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-caption">Coordinate active missions, manage distress calls, track rescue teams, and adapt to road conditions.</div>', unsafe_allow_html=True)
 
+    if st.session_state.get("replan_alerts"):
+        for alert in st.session_state["replan_alerts"]:
+            st.warning(f"🚨 **Autonomous Replan Alert:** {alert}")
+        if st.button("Dismiss Alert", key="dismiss_replan_alert"):
+            st.session_state["replan_alerts"] = []
+            st.rerun()
+
     # 1. Action & Mode Bar
     col_act1, col_act2, col_act3, col_act4 = st.columns([1.5, 1.2, 1.2, 1.1])
     with col_act1:
@@ -131,6 +138,27 @@ def render_rescue_operations_view(sim: SimulationService):
                         "Explanation": clean_reason,
                     })
                 st.dataframe(pd.DataFrame(unassigned_rows), use_container_width=True, hide_index=True)
+
+            # Candidate Team Rejections Audit Log
+            with st.expander("Candidate Team Rejections Audit Log (Constraint Checks)", expanded=False):
+                st.caption("Detailed record of candidate rescue teams rejected during Constraint Satisfaction Problem (CSP) solving.")
+                from rescuemind.algorithms.assignment import RescueTeamCSP
+                active = sim.incident_service.get_active_incidents()[:sim.dispatch_service.planning_horizon]
+                csp_auditor = RescueTeamCSP(active, sim.dispatch_service.get_all_teams(), sim.routing_service.graph)
+                csp_auditor.solve([i.incident_id for i in active])
+
+                if csp_auditor.rejections:
+                    rej_data = []
+                    for r in csp_auditor.rejections[:25]:
+                        rej_data.append({
+                            "Request ID": r.incident_id,
+                            "Team ID": r.team_id,
+                            "Failed Constraint": r.failed_constraint,
+                            "Diagnostic Reason": r.explanation,
+                        })
+                    st.dataframe(pd.DataFrame(rej_data), use_container_width=True, hide_index=True)
+                else:
+                    st.info("No candidates rejected during this planning cycle.")
 
             # Before-and-After Replan Comparison
             prev_plan = sim.dispatch_service.previous_plan
@@ -352,9 +380,8 @@ def render_rescue_operations_view(sim: SimulationService):
                     if st.button("Block This Road", type="primary", use_container_width=True):
                         sim.routing_service.block_road(target_edge.start_node, target_edge.end_node)
                         notes = sim.dispatch_service.replan_disrupted_routes(target_edge.start_node, target_edge.end_node)
-                        st.warning(f"Road closed between {target_edge.start_node} and {target_edge.end_node}!")
-                        for n in notes:
-                            st.info(n)
+                        st.session_state["replan_alerts"] = notes
+                        st.toast(f"Road closed between {target_edge.start_node} and {target_edge.end_node}!")
                         st.rerun()
                 else:
                     if st.button("Reopen Road", use_container_width=True):

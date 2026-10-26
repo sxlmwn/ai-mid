@@ -25,6 +25,9 @@ wheels/
 env/
 venv/
 ENV/
+venv_linux/
+venv*/
+
 
 # Testing
 .pytest_cache/
