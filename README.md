@@ -181,11 +181,11 @@ Once executed, open your web browser to:
 
 ## 8. Five-Minute University Demonstration Sequence
 
-1. **Operations Overview:** Open the main dashboard to inspect active emergency calls, available rescue teams, and the live Folium map of the Twin Cities network.
-2. **AI Lab (Algorithm Contrast):** Navigate to **"AI Lab & Search Arena"**, select Start: `F6_SUPER` and Goal: `ZERO_POINT`. Click **"Run Comparison"** to demonstrate that BFS picks the high-cost single hop ($12.0\text{ km}$), while UCS and A\* pick the 3-hop minimum-cost arterial route ($5.4\text{ km}$).
-3. **Incident Prioritization & NL Intake:** Open **"Incident Registry & Intake"**, select the **"Natural Language Intake"** tab, load a sample report, and click **"Extract Structured Fields"** to demonstrate offline information extraction with Human-in-the-Loop review.
-4. **Dispatch Intelligence (CSP vs B&B):** Open **"Dispatch Center"**, run the CSP solver to inspect assigned missions, candidate rejection diagnostics, and toggle **"Branch-and-Bound"** to observe travel-cost reductions and pruned branches.
-5. **Dynamic Road Disruption & Replanning:** Go to **"Settings & Scenarios"**, block a road segment (e.g. `ZERO_POINT <--> FAIZABAD`), and observe how the system immediately recalculates detour paths and outputs cost diffs.
+1. **Overview:** Open the main dashboard to inspect active requests, available rescue teams, and the live Folium map.
+2. **Rescue Operations:** Unified operations screen containing the prominent live map, current rescue plan assignments and routes, requests registry, distress call logging (with Natural Language intake assistant), fleet roster, and road disruption controls.
+3. **AI Lab:** Navigate to **"AI Lab"**, select Start: `F6_SUPER` and Goal: `ZERO_POINT`. Click **"Compare Routes"** to demonstrate that BFS picks the 2-hop route with higher cost (12.0 km), while UCS and A\* pick the 3-hop route with lower cost (5.4 km). Inspect step-by-step search traces in clean expanders.
+4. **Insights & Settings:** View real-time urgency distribution charts, algorithm efficiency charts, predefined scenario controls (e.g. Faizabad disruption or monsoon congestion), and priority policy weight sliders.
+
 
 ---
 

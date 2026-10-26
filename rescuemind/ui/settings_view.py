@@ -1,4 +1,8 @@
-"""Settings and dynamic scenario simulation controls."""
+"""Insights & Settings view: operational analytics, scenarios, scoring weights, and ethics."""
+from __future__ import annotations
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 from rescuemind.algorithms.priority import PriorityWeights
 from rescuemind.services.simulation_service import SimulationService
@@ -6,15 +10,81 @@ from rescuemind.utils.constants import DISCLAIMER_TEXT
 
 
 def render_settings_view(sim: SimulationService):
-    st.subheader("Simulation Controls & System Settings")
-    st.caption("Inject road disruptions, tune heuristic weights, switch scenarios, and audit simulation integrity.")
+    st.markdown('<div class="page-title">Insights & Settings</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-caption">Operational charts, simulation scenarios, priority policy configuration, and ethics standards.</div>', unsafe_allow_html=True)
 
-    s_tab1, s_tab2, s_tab3, s_tab4 = st.tabs(["Predefined Scenarios", "Road Disruption Controls", "Priority Scoring Weights", "Responsible AI & Ethics"])
+    tab_insights, tab_scen, tab_weights, tab_ethics = st.tabs([
+        "Operational Insights",
+        "Simulation Scenarios",
+        "Priority Policy Settings",
+        "Responsible AI & Notice",
+    ])
 
-    # TAB 1: SCENARIOS
-    with s_tab1:
-        st.markdown("##### Predefined Operational Scenarios")
-        st.caption("Load structured scenarios designed for university presentation and viva demonstration.")
+    # TAB 1: OPERATIONAL INSIGHTS
+    with tab_insights:
+        st.markdown("#### Real-Time Telemetry & Insights")
+
+        ch_col1, ch_col2 = st.columns(2)
+        with ch_col1:
+            st.markdown("##### Request Urgency Distribution")
+            p_dist = sim.metrics_service.get_priority_distribution()
+            urg_data = [
+                {"Urgency Level": f"Level {k}", "Count": v}
+                for k, v in p_dist["urgency_counts"].items()
+            ]
+            fig_urg = px.bar(
+                pd.DataFrame(urg_data),
+                x="Urgency Level",
+                y="Count",
+                color="Urgency Level",
+                color_discrete_sequence=["#A7D7C5", "#68B2A0", "#2C6975", "#E07A5F", "#D62828"],
+            )
+            fig_urg.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=10, r=10, t=10, b=10),
+                height=260,
+                showlegend=False,
+            )
+            st.plotly_chart(fig_urg, use_container_width=True)
+
+        with ch_col2:
+            st.markdown("##### Search Efficiency Comparison")
+            if "lab_results" in st.session_state:
+                res_dict = st.session_state["lab_results"]
+                algo_names = [r.algorithm_name.split()[0] for r in res_dict.values()]
+                nodes_exp = [r.explored_nodes for r in res_dict.values()]
+                costs = [r.cost for r in res_dict.values()]
+
+                fig_comp = go.Figure()
+                fig_comp.add_trace(go.Bar(
+                    x=algo_names,
+                    y=nodes_exp,
+                    name="Locations Explored",
+                    marker_color="#1B4D3E",
+                ))
+                fig_comp.add_trace(go.Bar(
+                    x=algo_names,
+                    y=costs,
+                    name="Route Distance (km)",
+                    marker_color="#D97706",
+                ))
+                fig_comp.update_layout(
+                    barmode="group",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    height=260,
+                    legend=dict(orientation="h", y=1.1),
+                )
+                st.plotly_chart(fig_comp, use_container_width=True)
+            else:
+                st.info("Run the AI Lab route comparison to view live algorithm benchmark charts here.")
+
+    # TAB 2: SIMULATION SCENARIOS
+    with tab_scen:
+        st.markdown("#### Operational Simulation Scenarios")
+        st.caption("Switch between predefined situations to demonstrate dynamic routing and capacity resilience.")
 
         scenarios = sim.scenarios_data
         sc_keys = list(scenarios.keys())
@@ -22,79 +92,28 @@ def render_settings_view(sim: SimulationService):
         chosen_sc_id = st.selectbox(
             "Select Scenario",
             sc_keys,
-            format_func=lambda k: f"{scenarios[k]['name']} ({k})",
+            format_func=lambda k: f"{scenarios[k]['name']}",
         )
         selected_sc = scenarios[chosen_sc_id]
 
-        st.info(f"**Description:** {selected_sc['description']}")
-        st.write(f"- **Blocked Roads:** {selected_sc.get('blocked_roads', []) or 'None'}")
-        st.write(f"- **Congestions:** {selected_sc.get('congestions', []) or 'Normal traffic'}")
+        st.info(f"**Scenario Description:** {selected_sc['description']}")
 
-        c_sc1, c_sc2 = st.columns(2)
+        c_sc1, c_sc2 = st.columns([1.2, 1.0])
         with c_sc1:
             if st.button("Apply Selected Scenario", type="primary", use_container_width=True):
                 sim.load_scenario(chosen_sc_id)
-                st.success(f"Scenario '{selected_sc['name']}' loaded successfully.")
+                st.success(f"Loaded scenario: {selected_sc['name']}")
                 st.rerun()
         with c_sc2:
             if st.button("Reset Simulation to Baseline", use_container_width=True):
                 sim.reset_all()
-                st.success("Simulation fully restored to baseline conditions.")
+                st.success("Simulation fully restored to pristine baseline.")
                 st.rerun()
 
-    # TAB 2: ROAD DISRUPTIONS
-    with s_tab2:
-        st.markdown("##### Dynamic Road Disruption Injector")
-        st.caption("Simulate real-time road closures or severe weather congestion, triggering autonomous route replanning.")
-
-        all_edges = sim.routing_service.get_all_edges()
-        edge_options = [f"{e.start_node} <--> {e.end_node} ({e.road_name})" for e in all_edges]
-
-        selected_edge_str = st.selectbox("Select Road Segment", edge_options)
-        idx = edge_options.index(selected_edge_str)
-        target_edge = all_edges[idx]
-
-        st.write(
-            f"**Segment Status:** {'CLOSED / BLOCKED' if not target_edge.is_open else 'OPEN'} | "
-            f"**Base Cost:** {target_edge.cost} km | **Congestion:** {target_edge.congestion_multiplier:.1f}x"
-        )
-
-        c_d1, c_d2 = st.columns(2)
-        with c_d1:
-            if target_edge.is_open:
-                if st.button("Block This Road Segment", type="primary", use_container_width=True):
-                    sim.routing_service.block_road(target_edge.start_node, target_edge.end_node)
-                    # Trigger autonomous replan for any active routes passing through this edge!
-                    replan_notes = sim.dispatch_service.replan_disrupted_routes(target_edge.start_node, target_edge.end_node)
-                    st.warning(f"Road blocked between {target_edge.start_node} and {target_edge.end_node}!")
-                    for note in replan_notes:
-                        st.info(note)
-                    st.rerun()
-            else:
-                if st.button("Reopen This Road Segment", use_container_width=True):
-                    sim.routing_service.unblock_road(target_edge.start_node, target_edge.end_node)
-                    st.success(f"Road reopened between {target_edge.start_node} and {target_edge.end_node}.")
-                    st.rerun()
-
-        with c_d2:
-            new_cong = st.slider("Simulated Congestion Multiplier", 1.0, 4.0, float(target_edge.congestion_multiplier), step=0.5)
-            if st.button("Apply Congestion Multiplier", use_container_width=True):
-                sim.routing_service.set_congestion(target_edge.start_node, target_edge.end_node, new_cong)
-                st.success(f"Congestion updated to {new_cong}x.")
-                st.rerun()
-
-        st.markdown("---")
-        st.markdown("###### Road Disruption Event Log")
-        if sim.routing_service.disruption_history:
-            for item in reversed(sim.routing_service.disruption_history[-10:]):
-                st.text(f"• {item}")
-        else:
-            st.info("No road disruptions recorded.")
-
-    # TAB 3: WEIGHT ADJUSTER
-    with s_tab3:
-        st.markdown("##### Multi-Factor Priority Scoring Policy")
-        st.caption("Adjust weight contributions for the priority queue scoring function without touching source code.")
+    # TAB 3: PRIORITY POLICY SETTINGS
+    with tab_weights:
+        st.markdown("#### Priority Queue Weighting Policy")
+        st.caption("Adjust how the system balances medical urgency, waiting duration, and special vulnerability.")
 
         current_w = sim.incident_service.priority_weights
         c_w1, c_w2, c_w3 = st.columns(3)
@@ -105,25 +124,25 @@ def render_settings_view(sim: SimulationService):
         with c_w3:
             w_vuln = st.slider("Vulnerability Weight", 0.0, 1.0, float(current_w.weight_vulnerability), 0.05)
 
-        if st.button("Update Scoring Weights", type="primary", use_container_width=True):
+        if st.button("Save Policy Weights", type="primary"):
             new_weights = PriorityWeights(
                 weight_urgency=w_urg,
                 weight_waiting=w_wait,
                 weight_vulnerability=w_vuln,
             )
             sim.incident_service.set_priority_weights(new_weights)
-            st.success("Priority weights updated and incident queue recalculated.")
+            st.success("Priority weights saved! All requests in queue have been recalculated.")
             st.rerun()
 
-    # TAB 4: ETHICS & NOTICE
-    with s_tab4:
-        st.markdown("##### Research & Educational Disclaimer")
+    # TAB 4: RESPONSIBLE AI & ETHICS
+    with tab_ethics:
+        st.markdown("#### Responsible AI & Educational Transparency")
         st.warning(DISCLAIMER_TEXT)
 
         st.markdown("""
-        ### Ethical Considerations & Responsible AI Design
-        1. **Simulation Scope:** All coordinates, animal cases, transit costs, and rescuer teams represent a synthetic demonstration environment in the Twin Cities.
-        2. **Human-in-the-Loop:** Automated AI plans recommend dispatch pairings, but operational confirmation remains in human hands.
-        3. **Transparency over Black-Boxes:** Decisions rely on verifiable AI algorithms (A*, UCS, Backtracking CSP, and Branch-and-Bound) with explicit mathematical traces.
-        4. **Non-Clinical Triage:** The multi-factor priority score is an operational dispatch scheduling model, not a certified veterinary triage diagnosis.
+        ##### Core Ethical Principles in RescueMind
+        1. **Human-in-the-Loop Oversight:** The AI system acts as a recommendation assistant. Human operators review and confirm all dispatch actions.
+        2. **Explainable AI:** Every team assignment, rejection, and route choice is accompanied by an evidence-based explanation derived directly from hard constraints and mathematical costs.
+        3. **Deterministic Fairness:** Tie-breaking is deterministic (using creation sequence numbers), preventing arbitrary favoritism.
+        4. **Transparent Boundaries:** The system does not claim veterinary medical diagnosis, and uses clearly marked synthetic telemetry.
         """)

@@ -19,7 +19,7 @@
 | **M5: CSP Solver** | Constraint Satisfaction | `rescuemind/algorithms/assignment.py` | **Complete** | Backtracking CSP solver with Minimum Remaining Values (MRV) and Forward Checking. Hard constraints for skills, capacity, category, availability. Partial assignment support. |
 | **M6: Optimization** | Branch-and-Bound | `rescuemind/algorithms/optimization.py` | **Complete** | Fleet travel cost minimization with admissible lower bound pruning. Verified against exhaustive enumeration. |
 | **M7: Services & Replan** | Coordination Engine | `rescuemind/services/` | **Complete** | `IncidentService`, `RoutingService`, `DispatchService`, `ExplanationService`, `MetricsService`, `SimulationService`. Disruption replanning logic. |
-| **M8: Interactive UI** | Streamlit Dashboard & Map | `rescuemind/ui/`, `app.py` | **Complete** | 7 views: Operations Overview, Live Map, Incident Management, Dispatch Center, AI Lab, Analytics, Settings & Scenarios. |
+| **M8: Interactive UI** | Modern Light Interface | `rescuemind/ui/`, `app.py` | **Complete** | Redesigned 4-section layout (Overview, Rescue Operations, AI Lab, Insights & Settings) with warm off-white surfaces, forest green accents, friendly plain-language labels, and accessible beginner explainers. |
 | **M9: NL Intake** | Natural Language Intake | `rescuemind/services/simulation_service.py` | **Complete** | Rule-based offline transcript extraction with Human-in-the-Loop review. |
 | **M10: Test Suite & Docs** | Quality Assurance | `tests/`, `docs/` | **Complete** | 33 automated pytest tests, Architecture doc with Mermaid diagrams, Algorithms Explained, Viva Questions, Demo Script, README. |
 

@@ -1,143 +1,153 @@
-"""AI Lab and Operations Analytics view."""
+"""AI Lab view: educational algorithm comparisons, search traces, and optimization analysis."""
+from __future__ import annotations
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
-from rescuemind.algorithms.comparison import run_all_search_algorithms, summarize_comparison
+from rescuemind.algorithms.comparison import run_all_search_algorithms
 from rescuemind.services.simulation_service import SimulationService
 from rescuemind.ui.map_view import render_operations_map
 
 
 def render_analytics_view(sim: SimulationService):
-    st.subheader("AI Lab & Algorithmic Evaluation")
-    st.caption("Interactive experimentation laboratory comparing graph search, priority queues, CSP, and Branch-and-Bound.")
+    st.markdown('<div class="page-title">AI Laboratory & Algorithm Evaluation</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-caption">Explore and compare how Artificial Intelligence algorithms solve routing, team assignment, and optimization problems.</div>',
+        unsafe_allow_html=True,
+    )
 
-    tab_lab, tab_csp_opt, tab_charts = st.tabs(["Search Algorithm Lab", "CSP vs Branch-and-Bound", "Operations Analytics"])
+    tab_search, tab_csp_opt = st.tabs(["Route Search Comparison", "CSP vs Branch-and-Bound Optimization"])
 
-    # TAB 1: SEARCH ALGORITHM LAB
-    with tab_lab:
-        st.markdown("##### Route Search Algorithm Comparative Arena")
-        st.caption("Run BFS, DFS, UCS, A*, and Greedy Best-First Search on identical graph topologies and compare their performance.")
+    # TAB 1: ROUTE SEARCH COMPARISON
+    with tab_search:
+        st.markdown("#### Compare Pathfinding Algorithms")
+        st.markdown(
+            "Select a starting point and a destination in the Twin Cities network to see how five genuinely different "
+            "search algorithms find paths across the road network."
+        )
 
         nodes = sim.routing_service.get_all_nodes()
         node_keys = sorted(nodes.keys())
 
         c1, c2, c3 = st.columns([1.5, 1.5, 1.0])
         with c1:
-            start_node = st.selectbox("Start Node", node_keys, index=node_keys.index("F6_SUPER") if "F6_SUPER" in node_keys else 0)
+            start_node = st.selectbox(
+                "Starting Point",
+                node_keys,
+                index=node_keys.index("F6_SUPER") if "F6_SUPER" in node_keys else 0,
+                help="Starting base or rescue location",
+            )
         with c2:
             default_goal = "ZERO_POINT" if "ZERO_POINT" in node_keys else node_keys[-1]
-            goal_node = st.selectbox("Destination Node", node_keys, index=node_keys.index(default_goal))
+            goal_node = st.selectbox(
+                "Destination",
+                node_keys,
+                index=node_keys.index(default_goal),
+                help="Target incident location",
+            )
         with c3:
             st.write("")
             st.write("")
-            run_btn = st.button("Run Comparison", type="primary", use_container_width=True)
+            compare_btn = st.button("Compare Routes", type="primary", use_container_width=True)
 
-        if run_btn or "lab_results" not in st.session_state:
+        if compare_btn or "lab_results" not in st.session_state:
             results = run_all_search_algorithms(sim.routing_service.graph, start_node, goal_node)
             st.session_state["lab_results"] = results
             st.session_state["lab_start"] = start_node
             st.session_state["lab_goal"] = goal_node
 
         results = st.session_state.get("lab_results", {})
-        summary = summarize_comparison(results)
-        df_summary = pd.DataFrame(summary)
 
-        st.markdown("###### Comparative Performance Metrics")
-        st.dataframe(df_summary, use_container_width=True)
+        # Beginner-friendly algorithm explanations banner
+        with st.expander("Learn about these 5 algorithms in plain English", expanded=False):
+            st.markdown("""
+            - **Breadth-First Search (BFS):** Explores outward level-by-level. It finds the route with the **fewest road turns (hops)**, but ignores road distance and tolls.
+            - **Depth-First Search (DFS):** Plunges down one road as far as possible before backtracking. Fast in some mazes, but often produces very long and winding detours.
+            - **Uniform Cost Search (UCS):** Explores by lowest accumulated travel cost. It mathematically guarantees the **shortest total travel distance**.
+            - **A* Search:** Guided by straight-line distance to the target ($f = g + h$). It finds the **optimal shortest route** while exploring far fewer unnecessary locations.
+            - **Greedy Best-First Search:** Always picks whichever road points closest toward the goal. Very quick, but can be tricked by dead ends and obstacles.
+            """)
 
-        # Highlight Route on Map
-        st.markdown("###### Visual Route Inspection on Map")
-        algo_to_display = st.selectbox("Select Algorithm Route to Highlight", list(results.keys()), index=list(results.keys()).index("A*") if "A*" in results else 0)
-        highlighted = results.get(algo_to_display)
+        # Readable Comparison Table / Cards
+        table_rows = []
+        for key, res in results.items():
+            table_rows.append({
+                "Algorithm": res.algorithm_name,
+                "Route Found": "Yes" if res.success else "No",
+                "Total Route Cost": f"{res.cost:.1f} km",
+                "Travel Time": f"{res.travel_time:.1f} min",
+                "Route Hops": res.edge_count,
+                "Locations Explored": res.explored_nodes,
+                "Compute Time": f"{res.runtime_ms:.2f} ms",
+            })
+        st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
-        col_map, col_trace = st.columns([1.2, 1.0])
-        with col_map:
-            if highlighted:
+        # Map Visualization & Advanced Traces
+        st.markdown("#### Visual Route on Map")
+        c_sel, _ = st.columns([1.5, 2.0])
+        with c_sel:
+            algo_view = st.selectbox("Select Route to Highlight on Map", list(results.keys()), index=list(results.keys()).index("A*") if "A*" in results else 0)
+
+        highlighted = results.get(algo_view)
+        if highlighted:
+            col_m, col_info = st.columns([1.3, 1.0])
+            with col_m:
                 render_operations_map(
                     graph=sim.routing_service.graph,
                     incidents=[],
                     teams=[],
                     highlight_route=highlighted,
-                    height=450,
+                    height=420,
                 )
-        with col_trace:
-            st.markdown(f"###### {highlighted.algorithm_name} Step Trace")
-            st.caption(highlighted.explanation)
-            if highlighted.step_trace:
-                df_trace = pd.DataFrame(highlighted.step_trace)
-                st.dataframe(df_trace, use_container_width=True, height=350)
-            else:
-                st.info("No step trace recorded for trivial or empty route.")
+            with col_info:
+                st.markdown(f"**{highlighted.algorithm_name} Details**")
+                st.write(f"- **Path:** `{' -> '.join(highlighted.path)}`")
+                st.write(f"- **Total Distance:** {highlighted.cost:.1f} km")
+                st.write(f"- **Number of Road Segments:** {highlighted.edge_count}")
+                st.write(f"- **Locations Explored:** {highlighted.explored_nodes}")
+                st.caption(highlighted.explanation)
 
-        # Educational takeaway
-        st.info(
-            "**Key AI Concept Takeaway:** Notice that BFS minimizes edge count (hops) but does not consider weights. "
-            "Uniform Cost Search (UCS) guarantees minimum weighted travel cost. A* incorporates an admissible Haversine "
-            "distance heuristic to prune the search space towards the goal while preserving mathematical optimality. "
-            "Greedy Best-First Search explores aggressively by heuristic alone, but sacrifices cost optimality."
-        )
+                # Advanced step trace inside a tidy expander
+                if highlighted.step_trace:
+                    with st.expander(f"View Step-by-Step Search Trace ({len(highlighted.step_trace)} steps)", expanded=False):
+                        st.dataframe(pd.DataFrame(highlighted.step_trace), use_container_width=True, height=260, hide_index=True)
 
     # TAB 2: CSP VS BRANCH-AND-BOUND
     with tab_csp_opt:
-        st.markdown("##### Constraint Satisfaction vs Branch-and-Bound Optimization")
-        st.caption("Demonstrates the distinction between finding ANY feasible assignment (CSP) versus finding the COST-OPTIMAL assignment (Branch-and-Bound).")
+        st.markdown("#### Team Assignment: Feasible Matching vs Optimal Matching")
+        st.markdown(
+            "Comparing how standard **Constraint Satisfaction (CSP)** matches teams to calls versus how **Branch-and-Bound** "
+            "finds the globally optimal allocation to minimize fleet fuel and travel distance."
+        )
 
         cmp_data = sim.metrics_service.compare_csp_vs_optimization()
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("CSP Feasible", "Yes" if cmp_data["csp_feasible"] else "No")
-        m2.metric("CSP Travel Cost", f"{cmp_data['csp_total_cost']:.1f} km")
-        m3.metric("B&B Travel Cost", f"{cmp_data['opt_total_cost']:.1f} km", delta=f"-{cmp_data['cost_reduction_km']:.1f} km" if cmp_data['cost_reduction_km'] > 0 else "0.0 km")
-        m4.metric("Branches Pruned", cmp_data["opt_branches_pruned"])
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Feasible Solution Found", "Yes" if cmp_data["csp_feasible"] else "No")
+        k2.metric("Standard CSP Distance", f"{cmp_data['csp_total_cost']:.1f} km")
+        savings = cmp_data["cost_reduction_km"]
+        k3.metric("Optimized Distance (B&B)", f"{cmp_data['opt_total_cost']:.1f} km", delta=f"-{savings:.1f} km" if savings > 0 else "0.0 km")
+        k4.metric("Subtrees Pruned", cmp_data["opt_branches_pruned"])
 
         c_csp, c_opt = st.columns(2)
         with c_csp:
-            st.markdown("###### CSP Assignment (MRV + Forward Checking)")
-            st.write(f"**Explored States:** {cmp_data['csp_nodes_explored']}")
-            for inc_id, team_id in cmp_data["csp_assignments"].items():
-                st.markdown(f"- Incident `{inc_id}` -> Team `{team_id}`")
+            st.markdown("##### Standard CSP Matching (MRV + Forward Checking)")
+            st.caption("Finds a valid assignment satisfying all rules. Stops at the first complete leaf.")
+            st.write(f"Search states checked: **{cmp_data['csp_nodes_explored']}**")
+            for inc_id, t_id in cmp_data["csp_assignments"].items():
+                st.markdown(f"• Request `{inc_id}` $\\to$ Team `{t_id}`")
 
         with c_opt:
-            st.markdown("###### Branch-and-Bound Assignment (Global Minimum Cost)")
-            st.write(f"**Explored States:** {cmp_data['opt_nodes_explored']} | **Subtrees Pruned:** {cmp_data['opt_branches_pruned']}")
-            for inc_id, team_id in cmp_data["opt_assignments"].items():
-                st.markdown(f"- Incident `{inc_id}` -> Team `{team_id}`")
+            st.markdown("##### Branch-and-Bound Cost Optimization")
+            st.caption("Searches across valid combinations to minimize total kilometers driven.")
+            st.write(f"Search states checked: **{cmp_data['opt_nodes_explored']}** | Subtrees safely pruned: **{cmp_data['opt_branches_pruned']}**")
+            for inc_id, t_id in cmp_data["opt_assignments"].items():
+                st.markdown(f"• Request `{inc_id}` $\\to$ Team `{t_id}`")
 
-        st.markdown("---")
-        st.markdown("###### Why does Branch-and-Bound outperform basic CSP for route travel cost?")
-        st.markdown("""
-        - **Standard CSP** searches for *any* assignment satisfying all hard constraints (availability, skills, capacity). It stops at the first valid leaf found by MRV backtracking.
-        - **Branch-and-Bound (B&B)** searches the space of feasible assignments to minimize total route kilometers. It computes an admissible lower bound on the remaining unassigned incidents. If the accumulated travel cost plus lower bound exceeds the best complete solution found so far, the entire branch is pruned!
-        """)
-
-    # TAB 3: CHARTS & OPERATIONAL METRICS
-    with tab_charts:
-        st.markdown("##### Telemetry & Evaluation Charts")
-
-        col_ch1, col_ch2 = st.columns(2)
-        with col_ch1:
-            st.markdown("###### Active Incident Urgency Distribution")
-            p_dist = sim.metrics_service.get_priority_distribution()
-            urg_df = pd.DataFrame([
-                {"Urgency Level": f"Level {k}", "Count": v}
-                for k, v in p_dist["urgency_counts"].items()
-            ])
-            fig_urg = px.bar(urg_df, x="Urgency Level", y="Count", color="Urgency Level", title="Incident Urgency Breakdown")
-            st.plotly_chart(fig_urg, use_container_width=True)
-
-        with col_ch2:
-            st.markdown("###### Search Algorithm Nodes Explored Comparison")
-            if "lab_results" in st.session_state:
-                res_dict = st.session_state["lab_results"]
-                algo_names = [r.algorithm_name for r in res_dict.values()]
-                nodes_exp = [r.explored_nodes for r in res_dict.values()]
-                costs = [r.cost for r in res_dict.values()]
-
-                fig_comp = go.Figure()
-                fig_comp.add_trace(go.Bar(x=algo_names, y=nodes_exp, name="Nodes Explored", marker_color="#1E88E5"))
-                fig_comp.add_trace(go.Bar(x=algo_names, y=costs, name="Total Route Cost (km)", marker_color="#E53935"))
-                fig_comp.update_layout(barmode="group", title="Nodes Explored vs Route Cost")
-                st.plotly_chart(fig_comp, use_container_width=True)
-            else:
-                st.info("Run the Search Algorithm Lab to generate live benchmark comparisons.")
+        with st.expander("Why does Branch-and-Bound save kilometers?", expanded=False):
+            st.markdown("""
+            **The Lower-Bound Pruning Principle:**
+            When evaluating teams for multiple emergencies, Branch-and-Bound calculates an admissible lower bound: 
+            the theoretical minimum remaining travel distance for all unassigned animals.
+            
+            If the kilometers driven so far **plus** the lower bound is already greater than the best complete solution found, 
+            the algorithm immediately **prunes** that entire path from memory. This guarantees mathematical optimality without checking every single combination.
+            """)
